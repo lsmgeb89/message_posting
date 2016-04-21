@@ -1,7 +1,9 @@
 #ifndef MESSAGE_POSTING_LOG_UTIL_H_
 #define MESSAGE_POSTING_LOG_UTIL_H_
 
+#include <algorithm>
 #include <iomanip>
+#include <mutex>
 
 #ifndef NDEBUG
 #define debug_clog std::clog
@@ -50,5 +52,22 @@ static NullStream null_stream;
 
 #define LOG_ERROR_MODULE_CLIENT LOG_ERROR MODULE_CLIENT
 #define LOG_ERROR_MODULE_SOCKET LOG_ERROR MODULE_SOCKET
+#define LOG_ERROR_MODULE_MESSAGE LOG_ERROR MODULE_MESSAGE
+
+inline std::ostream& operator<<(std::ostream& out,
+                                const std::lock_guard<std::mutex> &) {
+  return out;
+}
+
+template <typename T> inline std::lock_guard<T> lock_with(T &mutex) {
+  mutex.lock();
+  return { mutex, std::adopt_lock };
+}
+
+inline bool IsNumber(const std::string& str) {
+  return (!str.empty() &&
+          std::find_if(str.begin(), str.end(),
+                       [](char c) { return !std::isdigit(c); }) == str.end());
+}
 
 #endif // MESSAGE_POSTING_LOG_UTIL_H_

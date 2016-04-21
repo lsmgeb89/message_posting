@@ -22,11 +22,18 @@ class Socket {
     }
   }
 
+  Socket(const int& socket_descriptor)
+    : socket_descriptor_(socket_descriptor) {
+  }
+
   ~Socket(void) {
     if (-1 == ::close(socket_descriptor_)) {
       perror(LOG_ERROR_MODULE_SOCKET"[close]");
     }
   }
+
+  Socket(const Socket&) = delete; // no copy
+  Socket& operator=(const Socket&) = delete; // no assignment
 
   void Bind(const sockaddr* address) {
     int ret = ::bind(socket_descriptor_,
@@ -46,14 +53,15 @@ class Socket {
     }
   }
 
-  void Accept(sockaddr* address) {
+  int Accept(sockaddr* address) {
     std::size_t address_len(sizeof(*address));
-    int ret = ::accept(socket_descriptor_,
-                       address,
-                       reinterpret_cast<socklen_t*>(&address_len));
-    if (-1 == ret) {
-      perror(LOG_ERROR_MODULE_SOCKET"[accept4]");
+    int peer_socket = ::accept(socket_descriptor_,
+                               address,
+                               reinterpret_cast<socklen_t*>(&address_len));
+    if (-1 == peer_socket) {
+      perror(LOG_ERROR_MODULE_SOCKET"[accept]");
     }
+    return peer_socket;
   }
 
   int Connect(const sockaddr* remote_address) {
@@ -62,16 +70,16 @@ class Socket {
                      static_cast<socklen_t>(sizeof(*remote_address)));
   }
 
-  ssize_t Read(void* buf, size_t count) {
+  ssize_t Read(void* buf, size_t count) const {
     return ::read(socket_descriptor_, buf, count);
   }
 
-  ssize_t Write(const void* buf, size_t count) {
+  ssize_t Write(const void* buf, size_t count) const {
     return ::write(socket_descriptor_, buf, count);
   }
 
  private:
-  int socket_descriptor_;
+  const int socket_descriptor_;
 };
 
 } // namespace utils

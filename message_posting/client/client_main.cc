@@ -1,8 +1,18 @@
 #include "client.h"
 
 int main(int argc, char *argv[]) {
+  uint16_t port(0);
+  if (argc != 3 || !IsNumber(argv[2])) {
+    error_server << "Wrong Parameter" << std::endl;
+    return 0;
+  } else {
+    port = static_cast<uint16_t>(std::stoul(argv[2]));
+  }
+
   message_posting::client::Client message_client;
-  message_client.Start("127.0.0.1");
+  message_client.Connect(argv[1], port);
+  message_client.Login();
+  message_client.Communicate();
 
   return 0;
 }
