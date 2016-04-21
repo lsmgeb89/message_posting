@@ -128,6 +128,10 @@ void Client::SendMessage(const utils::RequestType& request_type) {
 
   if (utils::SendMessage2User == request_type) {
     std::cout << "\nMessage posted to " << recipient << std::endl;
+  } else if (utils::SendMessage2ConnectedUsers == request_type) {
+    std::cout << "\nMessage posted to all currently connected users." << std::endl;
+  } else if (utils::SendMessage2KnownUsers == request_type) {
+    std::cout << "\nMessage posted to all known users." << std::endl;
   }
 }
 

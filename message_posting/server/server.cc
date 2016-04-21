@@ -89,9 +89,12 @@ void Server::Serve(const int client_socket_descriptor) {
                     client_message_util.GetRecipient());
         break;
       case utils::SendMessage2ConnectedUsers:
+        SERVER_OUT << " posts a message for all currently connected users." << std::endl;
+        SendMessage(request_type, client_message_util.GetTextMessage());
+        break;
       case utils::SendMessage2KnownUsers:
-          SendMessage(request_type,
-                      client_message_util.GetTextMessage());
+        SERVER_OUT << " posts a message for all known users." << std::endl;
+        SendMessage(request_type, client_message_util.GetTextMessage());
         break;
       case utils::GetMessages:
         SERVER_OUT << " gets messages." << std::endl;
