@@ -49,7 +49,7 @@ typedef std::pair<std::string, std::string> MessageProperty;
 typedef std::vector<MessageProperty> PropertyList;
 typedef struct EmptyContent {} InvalidContent;
 
-constexpr uint8_t max_len = 32;
+constexpr uint8_t max_len = 64;
 static PropertyList dummy_list;
 
 struct TextMessage {

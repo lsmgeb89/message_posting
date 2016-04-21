@@ -46,15 +46,15 @@ class Server {
 
   void Exit(const std::string& client_name);
 
-  void AddUserToKnownList(const std::string& client_name);
+  // operations of Known List
+  inline void AddUserToKnownList(const std::string& client_name);
 
-  bool IsUserInKnownList(const std::string& client_name);
+  inline bool IsUserInKnownList(const std::string& client_name);
 
-  void AddUserToConnectedList(const std::string& client_name);
+  // operations of Connected List
+  inline void AddUserToConnectedList(const std::string& client_name);
 
-  void RemoveUserFromConnectedList(const std::string& client_name);
-
-  bool IsUserInConnectedList(const std::string& client_name);
+  inline void RemoveUserFromConnectedList(const std::string& client_name);
 };
 
 } // namespace server

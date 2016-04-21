@@ -58,6 +58,7 @@ void Client::Communicate(void) {
     std::cout << "Enter your choice: ";
     std::cin >> choice;
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << std::endl;
 
     switch (choice) {
       case utils::DisplayKnownUsersNames:
@@ -83,9 +84,12 @@ void Client::Communicate(void) {
 }
 
 void Client::DisplayMenu(void) {
+  std::stringstream output;
+  output << std::endl;
   for (auto it = menu_.cbegin(); it != menu_.cend(); ++it) {
-    std::cout << std::distance(menu_.cbegin(), it) + 1 << ". " << *it << ".\n";
+    output << std::distance(menu_.cbegin(), it) + 1 << ". " << *it << ".\n";
   }
+  std::cout << output.str();
 }
 
 void Client::DisplayName(const utils::RequestType& request_type) {
@@ -123,7 +127,7 @@ void Client::SendMessage(const utils::RequestType& request_type) {
   message_util_.Write();
 
   if (utils::SendMessage2User == request_type) {
-    std::cout << "Message posted to " << recipient << std::endl;
+    std::cout << "\nMessage posted to " << recipient << std::endl;
   }
 }
 

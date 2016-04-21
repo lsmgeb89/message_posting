@@ -54,12 +54,15 @@ void Server::Serve(const int client_socket_descriptor) {
   t = std::time(nullptr);
   std::strftime(time_str, sizeof(time_str), "%D, %R %p, ", std::localtime(&t));
   if (IsUserInKnownList(client_name)) {
-    std::cout << lock_with(mutex_output_) << time_str << "Connection by known user " << client_name << std::endl;
+    std::cout << lock_with(mutex_output_) << time_str
+              << "Connection by known user " << client_name << std::endl;
   } else {
-    std::cout << lock_with(mutex_output_) << time_str << "Connection by unknown user " << client_name << std::endl;
+    std::cout << lock_with(mutex_output_) << time_str
+              << "Connection by unknown user " << client_name << std::endl;
   }
 
   AddUserToConnectedList(client_name);
+  AddUserToKnownList(client_name);
 
   do {
     client_message_util.Read();
@@ -138,10 +141,7 @@ void Server::SendMessage(const utils::RequestType& request_type,
   std::lock_guard<std::mutex> guard(mutex_message_database_);
   if (utils::SendMessage2User == request_type && recipient) {
     // a message sent to an unknown user makes them known
-    if (!IsUserInConnectedList(recipient) && !IsUserInKnownList(recipient)) {
-      std::lock_guard<std::mutex> guard(mutex_known_users_);
-      known_users_[recipient] = recipient;
-    }
+    AddUserToKnownList(recipient);
     message_database_[recipient].push_back(text_msg);
   } else if (utils::SendMessage2ConnectedUsers == request_type) {
     std::lock_guard<std::mutex> guard(mutex_connected_users_);
@@ -154,11 +154,14 @@ void Server::SendMessage(const utils::RequestType& request_type,
   } else if (utils::SendMessage2KnownUsers == request_type) {
     std::lock_guard<std::mutex> guard(mutex_known_users_);
     for (auto it : known_users_) {
-      message_database_[it.first].push_back(text_msg);
+      // exclude sending message to himself
+      if (std::strcmp(text_msg.sender_, it.first.c_str())) {
+        message_database_[it.first].push_back(text_msg);
+      }
     }
   } else {
     error_server << lock_with(mutex_output_)
-        << "Wrong request type for SendMessage" << std::endl;
+                 << "Wrong request type for SendMessage" << std::endl;
   }
 }
 
@@ -189,19 +192,13 @@ void Server::GetMessage(const std::string client_name,
 
 void Server::Exit(const std::string& client_name) {
   RemoveUserFromConnectedList(client_name);
-  AddUserToKnownList(client_name);
 }
 
 void Server::AddUserToKnownList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_known_users_);
-  auto it = known_users_.find(client_name);
-  if (it != known_users_.end()) {
-    info_server << lock_with(mutex_output_)
-        << "Client " << client_name
-        << "is already in known list." << std::endl;
-  } else {
-    known_users_[client_name] = client_name;
-  }
+  known_users_[client_name] = client_name;
+  info_server << lock_with(mutex_output_)
+              << "Add client " << client_name << " to known list." << std::endl;
 }
 
 bool Server::IsUserInKnownList(const std::string &client_name) {
@@ -212,36 +209,18 @@ bool Server::IsUserInKnownList(const std::string &client_name) {
 
 void Server::AddUserToConnectedList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_connected_users_);
-  auto it = connected_users_.find(client_name);
-  if (it != connected_users_.end()) {
-    info_server << lock_with(mutex_output_)
-        << "Client " << client_name
-        << "is already in connected list." << std::endl;
-  } else {
-    connected_users_[client_name] = client_name;
-    info_server << lock_with(mutex_output_)
-        << "Add client " << client_name << " to connected list." << std::endl;
-  }
+  connected_users_[client_name] = client_name;
+  info_server << lock_with(mutex_output_)
+              << "Add client " << client_name << " to connected list." << std::endl;
 }
 
 void Server::RemoveUserFromConnectedList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_connected_users_);
-  auto it = connected_users_.find(client_name);
-  if (it != connected_users_.end()) {
-    connected_users_.erase(it);
+  auto removed_count = connected_users_.erase(client_name);
+  if (removed_count) {
     info_server << lock_with(mutex_output_)
-        << "Remove client " << client_name << " from connected list" << std::endl;
-  } else {
-    error_server << lock_with(mutex_output_)
-        << "Client " << client_name
-        << "isn't in connected list" << std::endl;
+                << "Remove client " << client_name << " from connected list." << std::endl;
   }
-}
-
-bool Server::IsUserInConnectedList(const std::string& client_name) {
-  std::lock_guard<std::mutex> guard(mutex_connected_users_);
-  auto it = connected_users_.find(client_name);
-  return (it != connected_users_.end());
 }
 
 } // namespace server
