@@ -46,6 +46,14 @@ void Client::Login(void) {
   utils::PropertyList list{{"n", name_}};
   message_util_.SetRequest(utils::Login, list);
   message_util_.Write();
+
+  message_util_.Read();
+  if (utils::R_FAIL == message_util_.GetRetCode()) {
+    error_client << message_util_.GetResponse() << std::endl;
+    throw std::logic_error("");
+  } else {
+    info_client << message_util_.GetResponse() << std::endl;
+  }
 }
 
 void Client::Communicate(void) {
@@ -58,9 +66,9 @@ void Client::Communicate(void) {
     std::cout << "Enter your choice: ";
     try {
       std::cin >> choice;
-    } catch (const std::invalid_argument &e_arg) {
+    } catch (const std::invalid_argument& e_arg) {
       error_client << "Invalid number! Please try again!";
-    } catch (const std::out_of_range &e_range) {
+    } catch (const std::out_of_range& e_range) {
       error_client << e_range.what();
     } catch (const std::system_error& e_sys) {
       error_client << "Unrecoverable I/O error!" << std::endl;

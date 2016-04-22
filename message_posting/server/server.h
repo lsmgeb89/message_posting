@@ -55,6 +55,8 @@ class Server {
   inline void AddUserToConnectedList(const std::string& client_name);
 
   inline void RemoveUserFromConnectedList(const std::string& client_name);
+
+  inline bool IsUserInConnectedList(const std::string& client_name);
 };
 
 } // namespace server

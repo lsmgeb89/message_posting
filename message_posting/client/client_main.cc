@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
 
   message_posting::client::Client message_client;
   message_client.Connect(argv[1], port);
-  message_client.Login();
   try {
+    message_client.Login();
     message_client.Communicate();
   } catch (...) {
     error_client << "Exit!\n";

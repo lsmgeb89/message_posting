@@ -50,6 +50,11 @@ enum MessageType {
   Response = 2
 };
 
+enum RetCode {
+  R_SUCCESS = 0,
+  R_FAIL = 1
+};
+
 typedef std::pair<std::string, std::string> MessageProperty;
 typedef std::vector<MessageProperty> PropertyList;
 typedef struct EmptyContent {} InvalidContent;
@@ -77,12 +82,17 @@ struct RequestMessage {
   };
 };
 
+struct ResponseMessage {
+  RetCode ret_code_;
+  char res_msg_[max_len];
+};
+
 struct Message {
   MessageType type_;
   union {
     InvalidContent invalid_;
     RequestMessage request_;
-    char response_[max_len];
+    ResponseMessage response_;
   };
 };
 
@@ -97,8 +107,10 @@ class MessageUtil {
   }
 
   // Setters
-  void SetResponse(PropertyList& property_list = dummy_list) {
+  void SetResponse(const RetCode& ret_code,
+                   const PropertyList& property_list = dummy_list) {
     PackHead(Response);
+    msg_str_stream_ << ret_code << delimiter_;
     for (auto property : property_list) {
       msg_str_stream_ << property.first << delimiter_;
       msg_str_stream_ << property.second << delimiter_;
@@ -107,7 +119,7 @@ class MessageUtil {
   }
 
   void SetRequest(const RequestType& request_type,
-                  PropertyList& property_list = dummy_list) {
+                  const PropertyList& property_list = dummy_list) {
     PackHead(Request);
     msg_str_stream_ << request_type << delimiter_;
     for (auto property : property_list) {
@@ -138,8 +150,12 @@ class MessageUtil {
     return parsed_msg_.request_.text_.text_msg_;
   }
 
+  const RetCode& GetRetCode(void) const {
+    return parsed_msg_.response_.ret_code_;
+  }
+
   const char* GetResponse(void) const {
-    return parsed_msg_.response_;
+    return parsed_msg_.response_.res_msg_;
   }
 
   // Communication
@@ -227,7 +243,7 @@ class MessageUtil {
   void ParseMessageType(const std::string& msg_str,
                         std::string::size_type& parse_count) {
     std::string info;
-    uint8_t req_type;
+    uint8_t info_code;
 
     // not a valid message
     if (msg_str[0] != msg_beg_ ||
@@ -246,13 +262,19 @@ class MessageUtil {
       goto error;
     }
 
+    info = ExtractNext(msg_str, parse_count);
+    info_code = std::stoul(info);
     if (Request == parsed_msg_.type_) {
-      info = ExtractNext(msg_str, parse_count);
-      req_type = std::stoul(info);
-      if (req_type > Exit) {
+      if (info_code > Exit) {
         goto error;
       } else {
-        parsed_msg_.request_.req_type_ = static_cast<RequestType>(req_type);
+        parsed_msg_.request_.req_type_ = static_cast<RequestType>(info_code);
+      }
+    } else if (Response == parsed_msg_.type_) {
+      if (info_code > R_FAIL) {
+        goto error;
+      } else {
+        parsed_msg_.response_.ret_code_ = static_cast<RetCode>(info_code);
       }
     }
 
@@ -287,7 +309,7 @@ class MessageUtil {
       } else if ("m" == key) {
         std::strcpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str());
       } else if ("z" == key) {
-        std::strcpy(parsed_msg_.response_, value.c_str());
+        std::strcpy(parsed_msg_.response_.res_msg_, value.c_str());
       }
     }
   }

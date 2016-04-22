@@ -43,6 +43,7 @@ void Server::Serve(const int client_socket_descriptor) {
   bool exit(false);
   char time_str[128];
   std::time_t t;
+  utils::PropertyList list;
 
   utils::Socket client_socket(client_socket_descriptor);
   utils::MessageUtil client_message_util(client_socket);
@@ -53,6 +54,19 @@ void Server::Serve(const int client_socket_descriptor) {
   std::memset(time_str, 0, 128);
   t = std::time(nullptr);
   std::strftime(time_str, sizeof(time_str), "%D, %R %p, ", std::localtime(&t));
+  if (IsUserInConnectedList(client_name)) {
+    std::cout << lock_with(mutex_output_) << time_str
+              << "Another connection by connected user " << client_name << " rejected" << std::endl;
+    list = {{"z", "Login rejected"}};
+    client_message_util.SetResponse(utils::R_FAIL, list);
+    client_message_util.Write();
+    return;
+  }
+
+  list = {{"z", "Login succeeded"}};
+  client_message_util.SetResponse(utils::R_SUCCESS, list);
+  client_message_util.Write();
+
   if (IsUserInKnownList(client_name)) {
     std::cout << lock_with(mutex_output_) << time_str
               << "Connection by known user " << client_name << std::endl;
@@ -134,7 +148,7 @@ void Server::DisplayName(const utils::RequestType &request_type,
   }
 
   list = {{"z", str_stream.str()}};
-  client_message_util.SetResponse(list);
+  client_message_util.SetResponse(utils::R_SUCCESS, list);
   client_message_util.Write();
 }
 
@@ -189,7 +203,7 @@ void Server::GetMessage(const std::string client_name,
   }
 
   list = {{"z", str_stream.str()}};
-  client_message_util.SetResponse(list);
+  client_message_util.SetResponse(utils::R_SUCCESS, list);
   client_message_util.Write();
 }
 
@@ -224,6 +238,12 @@ void Server::RemoveUserFromConnectedList(const std::string &client_name) {
     info_server << lock_with(mutex_output_)
                 << "Remove client " << client_name << " from connected list." << std::endl;
   }
+}
+
+bool Server::IsUserInConnectedList(const std::string& client_name) {
+  std::lock_guard<std::mutex> guard(mutex_connected_users_);
+  auto it = connected_users_.find(client_name);
+  return (it != connected_users_.end());
 }
 
 } // namespace server
