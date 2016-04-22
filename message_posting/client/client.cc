@@ -25,6 +25,7 @@ void Client::Connect(const std::string& remote_host,
   hostent* remote_host_info = gethostbyname(remote_host.c_str());
   if (!remote_host_info) {
     perror(LOG_ERROR_MODULE_CLIENT"[gethostbyname]");
+    throw std::runtime_error("");
   }
 
   sockaddr_in remote_address;
@@ -35,7 +36,6 @@ void Client::Connect(const std::string& remote_host,
 
   std::cout << "Connecting to " << remote_host << ":" << port << std::endl;
 
-  // TODO: handle error
   socket_.Connect(reinterpret_cast<const sockaddr*>(&remote_address));
 }
 

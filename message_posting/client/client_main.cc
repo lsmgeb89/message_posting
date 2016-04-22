@@ -9,9 +9,9 @@ int main(int argc, char *argv[]) {
     port = static_cast<uint16_t>(std::stoul(argv[2]));
   }
 
-  message_posting::client::Client message_client;
-  message_client.Connect(argv[1], port);
   try {
+    message_posting::client::Client message_client;
+    message_client.Connect(argv[1], port);
     message_client.Login();
     message_client.Communicate();
   } catch (...) {

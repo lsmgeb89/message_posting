@@ -27,7 +27,11 @@ void Server::Start(const uint16_t& port) {
 
   socket_.Listen();
 
-  gethostname(host, sizeof(host));
+  int ret = gethostname(host, sizeof(host));
+  if (-1 == ret) {
+    perror(LOG_ERROR_MODULE_SERVER"[gethostname]");
+    throw std::runtime_error("");
+  }
   std::cout << "Server is running on " << host << ":" << port << std::endl;
 
   while (1) {

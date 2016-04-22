@@ -18,7 +18,7 @@ class Socket {
     : socket_descriptor_(::socket(AF_INET, SOCK_STREAM, 0)) {
     if (-1 == socket_descriptor_) {
       perror(LOG_ERROR_MODULE_SOCKET"[socket]");
-      // TODO: more error handling
+      throw std::runtime_error("");
     }
   }
 
@@ -40,8 +40,8 @@ class Socket {
                      address,
                      static_cast<socklen_t>(sizeof(*address)));
     if (-1 == ret) {
-      std::cerr << errno;
       perror(LOG_ERROR_MODULE_SOCKET"[bind]");
+      throw std::runtime_error("");
     }
   }
 
@@ -50,6 +50,7 @@ class Socket {
     // TODO: adjust the length
     if (-1 == ret) {
       perror(LOG_ERROR_MODULE_SOCKET"[listen]");
+      throw std::runtime_error("");
     }
   }
 
@@ -60,14 +61,20 @@ class Socket {
                                reinterpret_cast<socklen_t*>(&address_len));
     if (-1 == peer_socket) {
       perror(LOG_ERROR_MODULE_SOCKET"[accept]");
+      throw std::runtime_error("");
     }
     return peer_socket;
   }
 
   int Connect(const sockaddr* remote_address) {
-    return ::connect(socket_descriptor_,
-                     remote_address,
-                     static_cast<socklen_t>(sizeof(*remote_address)));
+    int res = ::connect(socket_descriptor_,
+                        remote_address,
+                        static_cast<socklen_t>(sizeof(*remote_address)));
+    if (-1 == res) {
+      perror(LOG_ERROR_MODULE_SOCKET"[connect]");
+      throw std::runtime_error("");
+    }
+    return res;
   }
 
   ssize_t Read(void* buf, size_t count) const {

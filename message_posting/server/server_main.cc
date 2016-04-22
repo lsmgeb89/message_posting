@@ -9,8 +9,11 @@ int main(int argc, char *argv[]) {
     port = static_cast<uint16_t>(std::stoul(argv[1]));
   }
 
-  message_posting::server::Server message_server;
-  message_server.Start(port);
-
+  try {
+    message_posting::server::Server message_server;
+    message_server.Start(port);
+  } catch (...) {
+    error_server << "Exit!\n";
+  }
   return 0;
 }
