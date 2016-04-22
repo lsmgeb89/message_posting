@@ -8,10 +8,10 @@
 #ifndef NDEBUG
 #define debug_clog std::clog
 
-#define MODULE_SERVER "[server]"
-#define MODULE_CLIENT "[client]"
-#define MODULE_SOCKET "[socket]"
-#define MODULE_MESSAGE "[message]"
+#define MODULE_SERVER "[server] "
+#define MODULE_CLIENT "[client] "
+#define MODULE_SOCKET "[socket] "
+#define MODULE_MESSAGE "[message] "
 
 #define LOG_ERROR "[error]"
 #define LOG_INFO "[info]"

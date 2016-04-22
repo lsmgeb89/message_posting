@@ -31,10 +31,15 @@ inline std::istream& operator>>(std::istream& is, RequestType& request_type) {
     if (val >= DisplayKnownUsersNames && val <= Exit) {
       request_type = static_cast<RequestType>(val);
     } else {
-      error_client << "Wrong Input" << std::endl;
+      throw std::out_of_range("Invalid menu choice! Please try again!");
     }
   } else {
-    // TODO:: error handling
+    if (is.bad()) {
+      throw std::system_error();
+    } else if (is.fail() || is.eof()) {
+      is.clear();
+      throw std::invalid_argument("");
+    }
   }
   return is;
 }

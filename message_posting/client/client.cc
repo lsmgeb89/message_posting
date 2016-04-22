@@ -56,7 +56,17 @@ void Client::Communicate(void) {
 
     utils::RequestType choice;
     std::cout << "Enter your choice: ";
-    std::cin >> choice;
+    try {
+      std::cin >> choice;
+    } catch (const std::invalid_argument &e_arg) {
+      error_client << "Invalid number! Please try again!";
+    } catch (const std::out_of_range &e_range) {
+      error_client << e_range.what();
+    } catch (const std::system_error& e_sys) {
+      error_client << "Unrecoverable I/O error!" << std::endl;
+      throw e_sys;
+    }
+    // discard the Enter
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cout << std::endl;
 
