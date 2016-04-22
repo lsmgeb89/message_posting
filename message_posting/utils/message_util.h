@@ -59,7 +59,9 @@ typedef std::pair<std::string, std::string> MessageProperty;
 typedef std::vector<MessageProperty> PropertyList;
 typedef struct EmptyContent {} InvalidContent;
 
-constexpr uint8_t max_len = 64;
+constexpr uint8_t max_msg_len = 80;
+constexpr uint16_t msg_buf_size_ = 128;
+constexpr uint8_t max_len = msg_buf_size_;
 static PropertyList dummy_list;
 
 struct TextMessage {
@@ -161,9 +163,19 @@ class MessageUtil {
   // Communication
   ssize_t Write(void) {
     ClearBuf();
-    std::memcpy(msg_buf_.data(), msg_str_stream_.str().c_str(), msg_str_stream_.str().size());
 
-    info_message << "[Write]" << msg_str_stream_.str() << std::endl;
+    info_message << "[Write][" << msg_str_stream_.str().length() << "]"
+                 << msg_str_stream_.str() << std::endl;
+
+    if (msg_str_stream_.str().size() > msg_buf_size_) {
+      std::string err_msg;
+      err_msg += "Message discarded because it exceeded max buffer length ";
+      err_msg += std::to_string(msg_buf_size_);
+      err_msg += "\n";
+      throw std::overflow_error(err_msg);
+    }
+
+    std::memcpy(msg_buf_.data(), msg_str_stream_.str().c_str(), msg_str_stream_.str().size());
 
     ssize_t count = internal_socket_.Write(msg_buf_.data(), msg_buf_size_);
     if (-1 == count) {
@@ -196,7 +208,6 @@ class MessageUtil {
 
  private:
   const Socket& internal_socket_;
-  static constexpr uint16_t msg_buf_size_ = 128;
   static constexpr char delimiter_ = '|';
   static constexpr char msg_beg_ = '<';
   static constexpr char msg_end_ = '>';
@@ -298,18 +309,18 @@ class MessageUtil {
       std::string key = ExtractNext(msg_str, parse_count);
       std::string value = ExtractNext(msg_str, parse_count);
       if ("n" == key) {
-        std::strcpy(parsed_msg_.request_.name_, value.c_str());
+        std::strncpy(parsed_msg_.request_.name_, value.c_str(), max_len);
       } else if ("s" == key) {
-        std::strcpy(parsed_msg_.request_.text_.text_msg_.sender_, value.c_str());
+        std::strncpy(parsed_msg_.request_.text_.text_msg_.sender_, value.c_str(), max_len);
       } else if ("r" == key) {
-        std::strcpy(parsed_msg_.request_.text_.recipient_, value.c_str());
+        std::strncpy(parsed_msg_.request_.text_.recipient_, value.c_str(), max_len);
       } else if ("t" == key) {
         std::istringstream stream(value);
         stream >> parsed_msg_.request_.text_.text_msg_.time_;
       } else if ("m" == key) {
-        std::strcpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str());
+        std::strncpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str(), max_len);
       } else if ("z" == key) {
-        std::strcpy(parsed_msg_.response_.res_msg_, value.c_str());
+        std::strncpy(parsed_msg_.response_.res_msg_, value.c_str(), max_len);
       }
     }
   }

@@ -78,25 +78,29 @@ void Client::Communicate(void) {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cout << std::endl;
 
-    switch (choice) {
-      case utils::DisplayKnownUsersNames:
-      case utils::DisplayConnectedUsersNames:
-        DisplayName(choice);
-        break;
-      case utils::SendMessage2User:
-      case utils::SendMessage2ConnectedUsers:
-      case utils::SendMessage2KnownUsers:
-        SendMessage(choice);
-        break;
-      case utils::GetMessages:
-        GetMessage();
-        break;
-      case utils::Exit:
-        Exit();
-        exit = true;
-        break;
-      default:
-        break;
+    try {
+      switch (choice) {
+        case utils::DisplayKnownUsersNames:
+        case utils::DisplayConnectedUsersNames:
+          DisplayName(choice);
+          break;
+        case utils::SendMessage2User:
+        case utils::SendMessage2ConnectedUsers:
+        case utils::SendMessage2KnownUsers:
+          SendMessage(choice);
+          break;
+        case utils::GetMessages:
+          GetMessage();
+          break;
+        case utils::Exit:
+          Exit();
+          exit = true;
+          break;
+        default:
+          break;
+      }
+    } catch (const std::overflow_error& e_over) {
+      error_client << e_over.what();
     }
   } while(!exit);
 }
@@ -133,6 +137,12 @@ void Client::SendMessage(const utils::RequestType& request_type) {
   }
   std::cout << "Enter a message: ";
   std::getline(std::cin, text_msg);
+
+  if (text_msg.length() > utils::max_msg_len) {
+    std::cout << "\nMessage discarded because it exceeded max length "
+              << std::to_string(utils::max_msg_len) << std::endl;
+    return;
+  }
 
   std::time_t current_time = std::time(nullptr);
   list = {{"s", name_}, {"t", std::to_string(current_time)}, {"m", text_msg}};
