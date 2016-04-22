@@ -67,9 +67,11 @@ void Client::Communicate(void) {
     try {
       std::cin >> choice;
     } catch (const std::invalid_argument& e_arg) {
-      error_client << "Invalid number! Please try again!";
+      error_client << "Invalid number! Please try again!" << std::endl;
+      continue;
     } catch (const std::out_of_range& e_range) {
-      error_client << e_range.what();
+      error_client << e_range.what() << std::endl;
+      continue;
     } catch (const std::system_error& e_sys) {
       error_client << "Unrecoverable I/O error!" << std::endl;
       throw e_sys;
@@ -154,12 +156,17 @@ void Client::SendMessage(const utils::RequestType& request_type) {
   message_util_.SetRequest(request_type, list);
   message_util_.Write();
 
-  if (utils::SendMessage2User == request_type) {
-    std::cout << "\nMessage posted to " << recipient << std::endl;
-  } else if (utils::SendMessage2ConnectedUsers == request_type) {
-    std::cout << "\nMessage posted to all currently connected users." << std::endl;
-  } else if (utils::SendMessage2KnownUsers == request_type) {
-    std::cout << "\nMessage posted to all known users." << std::endl;
+  message_util_.Read();
+  if (utils::R_FAIL == message_util_.GetRetCode()) {
+    error_client << message_util_.GetResponse() << std::endl;
+  } else {
+    if (utils::SendMessage2User == request_type) {
+      std::cout << "\nMessage posted to " << recipient << std::endl;
+    } else if (utils::SendMessage2ConnectedUsers == request_type) {
+      std::cout << "\nMessage posted to all currently connected users." << std::endl;
+    } else if (utils::SendMessage2KnownUsers == request_type) {
+      std::cout << "\nMessage posted to all known users." << std::endl;
+    }
   }
 }
 

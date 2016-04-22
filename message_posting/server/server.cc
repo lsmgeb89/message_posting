@@ -103,19 +103,20 @@ void Server::Serve(const int client_socket_descriptor) {
         DisplayName(request_type, client_message_util);
         break;
       case utils::SendMessage2User:
-        SERVER_OUT << " posts a message for " << client_message_util.GetRecipient()
-                   << "." << std::endl;
-        SendMessage(request_type,
+        SendMessage(time_str,
+                    client_name,
+                    client_message_util,
+                    request_type,
                     client_message_util.GetTextMessage(),
                     client_message_util.GetRecipient());
         break;
       case utils::SendMessage2ConnectedUsers:
-        SERVER_OUT << " posts a message for all currently connected users." << std::endl;
-        SendMessage(request_type, client_message_util.GetTextMessage());
-        break;
       case utils::SendMessage2KnownUsers:
-        SERVER_OUT << " posts a message for all known users." << std::endl;
-        SendMessage(request_type, client_message_util.GetTextMessage());
+        SendMessage(time_str,
+                    client_name,
+                    client_message_util,
+                    request_type,
+                    client_message_util.GetTextMessage());
         break;
       case utils::GetMessages:
         SERVER_OUT << " gets messages." << std::endl;
@@ -130,8 +131,6 @@ void Server::Serve(const int client_socket_descriptor) {
         break;
     }
   } while(!exit);
-
-#undef SERVER_OUT
 }
 
 void Server::DisplayName(const utils::RequestType &request_type,
@@ -159,37 +158,59 @@ void Server::DisplayName(const utils::RequestType &request_type,
   client_message_util.Write();
 }
 
-void Server::SendMessage(const utils::RequestType& request_type,
+void Server::SendMessage(const char* time_str,
+                         const std::string& client_name,
+                         utils::MessageUtil& client_message_util,
+                         const utils::RequestType& request_type,
                          const utils::TextMessage& text_msg,
                          const char* recipient) {
-  std::lock_guard<std::mutex> guard(mutex_message_database_);
-  if (utils::SendMessage2User == request_type && recipient) {
-    // a message sent to an unknown user makes them known
-    AddUserToKnownList(recipient);
-    message_database_[recipient].push_back(text_msg);
-  } else if (utils::SendMessage2ConnectedUsers == request_type) {
-    std::lock_guard<std::mutex> guard(mutex_connected_users_);
-    for (auto it : connected_users_) {
-      // exclude sending message to himself
-      if (std::strcmp(text_msg.sender_, it.first.c_str())) {
-        message_database_[it.first].push_back(text_msg);
-      }
-    }
-  } else if (utils::SendMessage2KnownUsers == request_type) {
-    std::lock_guard<std::mutex> guard(mutex_known_users_);
-    for (auto it : known_users_) {
-      // exclude sending message to himself
-      if (std::strcmp(text_msg.sender_, it.first.c_str())) {
-        message_database_[it.first].push_back(text_msg);
-      }
-    }
+  utils::PropertyList list;
+  if (IsUserExceedMessageCount(client_name)) {
+    SERVER_OUT << "'s message discarded because of exceeding max message count "
+               << std::to_string(max_message_count) << "." << std::endl;
+    list = {{"z", "Message discarded because exceeding max message count " + std::to_string(max_message_count)}};
+    client_message_util.SetResponse(utils::R_FAIL, list);
+    client_message_util.Write();
   } else {
-    error_server << lock_with(mutex_output_)
-                 << "Wrong request type for SendMessage" << std::endl;
+    {
+      std::lock_guard<std::mutex> guard(mutex_message_database_);
+      if (utils::SendMessage2User == request_type && recipient) {
+        // a message sent to an unknown user makes them known
+        AddUserToKnownList(recipient);
+        message_database_[recipient].push_back(text_msg);
+        SERVER_OUT << " posts a message for " << client_message_util.GetRecipient()
+                   << "." << std::endl;
+      } else if (utils::SendMessage2ConnectedUsers == request_type) {
+        std::lock_guard<std::mutex> guard(mutex_connected_users_);
+        for (auto it : connected_users_) {
+          // exclude sending message to himself
+          if (std::strcmp(text_msg.sender_, it.first.c_str())) {
+            message_database_[it.first].push_back(text_msg);
+          }
+        }
+        SERVER_OUT << " posts a message for all currently connected users." << std::endl;
+      } else if (utils::SendMessage2KnownUsers == request_type) {
+        std::lock_guard<std::mutex> guard(mutex_known_users_);
+        for (auto it : known_users_) {
+          // exclude sending message to himself
+          if (std::strcmp(text_msg.sender_, it.first.c_str())) {
+            message_database_[it.first].push_back(text_msg);
+          }
+        }
+        SERVER_OUT << " posts a message for all known users." << std::endl;
+      }
+    }
+
+    list = {{"z", "Message sent"}};
+    client_message_util.SetResponse(utils::R_SUCCESS, list);
+    client_message_util.Write();
+    StepUserSendMessageCount(client_name);
   }
+
+#undef SERVER_OUT
 }
 
-void Server::GetMessage(const std::string client_name,
+void Server::GetMessage(const std::string& client_name,
                         utils::MessageUtil& client_message_util) {
   std::stringstream str_stream;
   utils::PropertyList list;
@@ -220,7 +241,7 @@ void Server::Exit(const std::string& client_name) {
 
 void Server::AddUserToKnownList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_known_users_);
-  known_users_[client_name] = client_name;
+  known_users_.insert({client_name, 0});
   info_server << lock_with(mutex_output_)
               << "Add client " << client_name << " to known list." << std::endl;
 }
@@ -235,6 +256,16 @@ Server::KnownList::size_type Server::GetKnownListSize(void) {
   std::lock_guard<std::mutex> guard(mutex_known_users_);
   return known_users_.size();
 };
+
+void Server::StepUserSendMessageCount(const std::string &client_name) {
+  std::lock_guard<std::mutex> guard(mutex_known_users_);
+  ++known_users_[client_name];
+}
+
+bool Server::IsUserExceedMessageCount(const std::string &client_name) {
+  std::lock_guard<std::mutex> guard(mutex_known_users_);
+  return (known_users_[client_name] >= max_message_count);
+}
 
 void Server::AddUserToConnectedList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_connected_users_);

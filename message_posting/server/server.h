@@ -30,20 +30,24 @@ class Server {
   std::mutex mutex_known_users_;
   std::mutex mutex_connected_users_;
   std::mutex mutex_message_database_;
-  typedef std::unordered_map<std::string, std::string> KnownList;
+  typedef std::unordered_map<std::string, uint8_t> KnownList;
   KnownList known_users_;
   std::unordered_map<std::string, std::string> connected_users_;
   std::unordered_map<std::string, std::vector<utils::TextMessage>> message_database_;
   static constexpr KnownList::size_type max_user = 100;
+  static constexpr uint8_t max_message_count = 10;
 
   void DisplayName(const utils::RequestType& request_type,
                    utils::MessageUtil& client_message_util);
 
-  void SendMessage(const utils::RequestType& request_type,
+  void SendMessage(const char* time_str,
+                   const std::string& client_name,
+                   utils::MessageUtil& client_message_util,
+                   const utils::RequestType& request_type,
                    const utils::TextMessage& text_msg,
                    const char* recipient = nullptr);
 
-  void GetMessage(const std::string client_name,
+  void GetMessage(const std::string& client_name,
                   utils::MessageUtil& client_message_util);
 
   void Exit(const std::string& client_name);
@@ -54,6 +58,10 @@ class Server {
   inline bool IsUserInKnownList(const std::string& client_name);
 
   inline KnownList::size_type GetKnownListSize(void);
+
+  inline void StepUserSendMessageCount(const std::string& client_name);
+
+  inline bool IsUserExceedMessageCount(const std::string& client_name);
 
   // operations of Connected List
   inline void AddUserToConnectedList(const std::string& client_name);
