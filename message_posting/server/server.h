@@ -30,9 +30,11 @@ class Server {
   std::mutex mutex_known_users_;
   std::mutex mutex_connected_users_;
   std::mutex mutex_message_database_;
-  std::unordered_map<std::string, std::string> known_users_;
+  typedef std::unordered_map<std::string, std::string> KnownList;
+  KnownList known_users_;
   std::unordered_map<std::string, std::string> connected_users_;
   std::unordered_map<std::string, std::vector<utils::TextMessage>> message_database_;
+  static constexpr KnownList::size_type max_user = 100;
 
   void DisplayName(const utils::RequestType& request_type,
                    utils::MessageUtil& client_message_util);
@@ -50,6 +52,8 @@ class Server {
   inline void AddUserToKnownList(const std::string& client_name);
 
   inline bool IsUserInKnownList(const std::string& client_name);
+
+  inline KnownList::size_type GetKnownListSize(void);
 
   // operations of Connected List
   inline void AddUserToConnectedList(const std::string& client_name);

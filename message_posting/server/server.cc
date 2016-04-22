@@ -57,7 +57,14 @@ void Server::Serve(const int client_socket_descriptor) {
   if (IsUserInConnectedList(client_name)) {
     std::cout << lock_with(mutex_output_) << time_str
               << "Another connection by connected user " << client_name << " rejected" << std::endl;
-    list = {{"z", "Login rejected"}};
+    list = {{"z", "Not allowed multiple active connections of the same user; Login rejected"}};
+    client_message_util.SetResponse(utils::R_FAIL, list);
+    client_message_util.Write();
+    return;
+  } else if (GetKnownListSize() == max_user) {
+    std::cout << lock_with(mutex_output_) << time_str
+        << "Server reached maximum users; connection by connected user " << client_name << " rejected" << std::endl;
+    list = {{"z", "Maximum users reached; Login rejected"}};
     client_message_util.SetResponse(utils::R_FAIL, list);
     client_message_util.Write();
     return;
@@ -223,6 +230,11 @@ bool Server::IsUserInKnownList(const std::string &client_name) {
   auto it = known_users_.find(client_name);
   return (it != known_users_.end());
 }
+
+Server::KnownList::size_type Server::GetKnownListSize(void) {
+  std::lock_guard<std::mutex> guard(mutex_known_users_);
+  return known_users_.size();
+};
 
 void Server::AddUserToConnectedList(const std::string &client_name) {
   std::lock_guard<std::mutex> guard(mutex_connected_users_);
