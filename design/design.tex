@@ -1,0 +1,147 @@
+\documentclass[a4paper]{report}
+
+% load packages
+%\usepackage{showframe}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{courier}
+\usepackage{arydshln}
+
+\setlength{\parskip}{1em}
+
+\lstset{
+  language=C,
+  basicstyle=\ttfamily,
+  keywordstyle=\bfseries,
+  showstringspaces=false,
+  morekeywords={semWait, semSignal}
+}
+
+\begin{document}
+
+\title{Design of Project 3 for CS 5348.001 - Operating Systems Concepts}
+
+\author{Siming Liu}
+
+\maketitle{}
+
+\section*{Messages}
+All the communications between clients and servers are through stream socket. All the data exchanged are ASCII character strings with a specific designed format so that the endpoint(client or server) that received the data could parse them to extract all messages in that.
+
+\subsection*{Data Format}
+
+On the whole, the data format is:
+
+\vspace{1em}
+
+\centerline{\textless\textbar\textit{type}\textbar\textit{code}\textbar${key}_{0}$\textbar${value}_{0}$\textbar${key}_{1}$\textbar${value}_{1}$\textbar$\ldots$\textbar${key}_{n}$\textbar${value}_{n}$\textbar\textgreater}
+
+\noindent Note that all the \textit{italic texts} in the data format are variables, which are real character strings in real transmission happened.
+
+\noindent From the outmost, we have one pair data start and end indicator: \textless \ and \textgreater. By this two characters, the parser could identify the beginning and end of the data when only parts of data are transmitted through stream socket.
+
+\noindent We goes through inside one more step. The character \textbar \ is used as a delimiter. By this, the parser could seperate a whole data into different parts we called the \textbf{field} which is either a real infomation or a functional indicator, for example to show the type of the data. Note that we will use \underline{\textit{italic texts}} with underline to show the real string contents in the field while transmission happened.
+
+\subsection*{Data Fields}
+
+By design, there are two types of data: request and response.
+\begin{description}[labelindent=1em]
+  \item[Request:] The \textit{type} field of the request data is \underline{\textit{req}}.
+  \item[Response:] The \textit{type} field of the response data is \underline{\textit{res}}.
+\end{description}
+
+\noindent And then, we explain the \textit{code} field whose function is defined differently when in the different type of data.
+\begin{description}[labelindent=1em]
+  \item[Request:] The \textit{code} field of the request data serves as the categories of the request data. There are eight categories, which is basiclly the map of menu choices. They are defined like \lstinline{C++} codes below:
+  \begin{lstlisting}
+    enum RequestType {
+      Login = 0,
+      DisplayKnownUsersNames = 1,
+      DisplayConnectedUsersNames = 2,
+      SendMessage2User = 3,
+      SendMessage2ConnectedUsers = 4,
+      SendMessage2KnownUsers = 5,
+      GetMessages = 6,
+      Exit = 7
+    };
+  \end{lstlisting}
+  So the integer value reflected by the character \textit{code} field shows the specific request's type. For example, if the field is \underline{\textit{1}}, it requests server to display all known users' names.
+  \item[Response:] The \textit{code} field of the response data serves as return codes which indicates the success or failure of the request operation executed by the server. They are defined like \lstinline{C++} codes below:
+  \begin{lstlisting}
+    enum RetCode {
+      R_SUCCESS = 0,
+      R_FAIL = 1
+    };
+  \end{lstlisting}
+  So the integer value reflected by the character \textit{code} field shows the result of execution of request by server. For example, if the field is \underline{\textit{0}}, the execution result of previous request by server is success.
+\end{description}
+
+\noindent In the end, we will explain the function of a field pair: \textit{key} and \textit{value}. These two fields \textit{key} and \textit{value} must be in pair. If not, they are invalid fields which caused parser to discard the field. We call them a property pair. Furthermore, we could have more than one property pair in the data if the length is allowed. In each property pair, the \textit{key} field shows the categories of the \textit{value} and the \textit{key} field is mapped to a common pre-defined meaning by the client and server. And the \textit{value} field contains the a real infomation of that category. For example, if the \textit{key} field is \underline{\textit{n}} which is mapped to name and \textit{value} field is \underline{\textit{Bob}}, the property pair means to transmit a name called Bob. The table below lists the mapping of \textit{key} fields and pre-defined meanings.
+
+\begin{tabular}{|l|l|}
+  \hline
+  \textit{key} field & defined meaning \\
+  \hline
+  \underline{\textit{n}} & name of a client \\
+  \hline
+  \underline{\textit{s}} & sender of a text message \\
+  \hline
+  \underline{\textit{r}} & recipient of a text message \\
+  \hline
+  \underline{\textit{t}} & time of a text message \\
+  \hline
+  \underline{\textit{m}} & content of a text message \\
+  \hline
+  \underline{\textit{z}} & details of error message or a success infomation from the server \\
+  \hline
+\end{tabular}
+
+\subsection*{Data Examples}
+The table below shows the examples data transimitted by the server or the client that almost cover every categories of the data.
+
+\noindent
+\begin{tabular}{|l|l|}
+  \hline
+  data & \textless\textbar{req}\textbar{0}\textbar{n}\textbar{bach}\textbar\textgreater \\ \hdashline
+  note & A client named bach requests to login to server. \\
+  \hline
+  data & \textless\textbar{req}\textbar{1}\textbar\textgreater \\ \hdashline
+  note & A client requests to display the names of all known users. \\
+  \hline
+  data & \textless\textbar{req}\textbar{2}\textbar\textgreater \\ \hdashline
+  note & A client requests to display the names of all currently connected users. \\
+  \hline
+  data & \textless\textbar{req}\textbar{3}\textbar{s}\textbar{bach}\textbar{t}\textbar{1461427727}\textbar{m}\textbar{hello mozart}\textbar{r}\textbar{mozart}\textbar\textgreater \\ \hdashline
+  note & A client named bach sents a text message: hello mozart to a client named mozart. \\
+  \hline
+  data & \textless\textbar{req}\textbar{4}\textbar{s}\textbar{bach}\textbar{t}\textbar{1461427756}\textbar{m}\textbar{hello all}\textbar\textgreater \\ \hdashline
+  note & A client named bach sents a text message: hello all to all currently connected users. \\
+  \hline
+  data & \textless\textbar{req}\textbar{5}\textbar{s}\textbar{bach}\textbar{t}\textbar{1461427767}\textbar{m}\textbar{goodbye everyone}\textbar\textgreater \\ \hdashline
+  note & A client named bach sents a text message: goodbye everyone to all known users. \\
+  \hline
+  data & \textless\textbar{req}\textbar{6}\textbar\textgreater \\ \hdashline
+  note & A client requests to get my messages. \\
+  \hline
+  data & \textless\textbar{req}\textbar{7}\textbar\textgreater \\ \hdashline
+  note & A client exits. \\
+  \hline
+  data & \textless\textbar{res}\textbar{0}\textbar{z}\textbar{Login succeeded}\textbar\textgreater \\ \hdashline
+  note & A success message from the server \\
+  \hline
+  data & \textless\textbar{res}\textbar{0}\textbar{z}\textbar{Message sent}\textbar\textgreater \\ \hdashline
+  note & A success message from the server \\
+  \hline
+  data & \textless\textbar{res}\textbar{0}\textbar{z}\textbar{1. bach}\textbar\textgreater \\ \hdashline
+  note & The response of a request of getting my messages from the server \\
+  \hline
+  data & \textless\textbar{res}\textbar{0}\textbar{z}\textbar{Not allowed multiple active connections of the same user; Login rejected}\textbar\textgreater \\ \hdashline
+  note & An error message from the server \\
+  \hline
+  data & \textless\textbar{res}\textbar{0}\textbar{z}\textbar{Maximum users reached; Login rejected}\textbar\textgreater \\ \hdashline
+  note & An error message from the server \\
+  \hline
+\end{tabular}
+
+\end{document}
