@@ -1,0 +1,61 @@
+\documentclass[a4paper]{report}
+
+% load packages
+%\usepackage{showframe}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{courier}
+
+\setlength{\parskip}{1em}
+
+\lstset{
+  basicstyle=\ttfamily,
+  showstringspaces=false
+}
+
+\begin{document}
+
+\title{Summary of Project 3 for CS 5348.001 - Operating Systems Concepts}
+
+\author{Siming Liu}
+
+\maketitle{}
+
+\section*{Organization of Project}
+The project is intended to implement a pair binary of mini-server and mini-client. The client and server communicates each other through stream socket under linux or unix platform. The server could serve multiple clients at the same time and support simple message exchange services with clients. There are seven functions needed to be supported by the client and the server:
+\begin{enumerate}[label=\textbf{\textit{\alph*}})]
+  \item Display the names of all known users.
+  \item Display the names of all currently connected users.
+  \item Send a text message to a particular user.
+  \item Send a text message to all currently connected users.
+  \item Send a text message to all known users.
+  \item Get my messages.
+  \item Exit.
+\end{enumerate}
+
+\noindent To achieve this goal, I use \lstinline{C++} to implement four classes. They are \lstinline{Client}, \lstinline{Server}, \lstinline{Socket} and \lstinline{MessageUtil}. We discuss them one by one from bottom to top level.
+
+\noindent Class \lstinline{Socket} is a simple wrapper of stream socket in the linux to follow object-oriented rules. It supports most sockets' operations like \lstinline{Socket::Bind()}, \lstinline{Socket::Listen()}, \lstinline{Socket::Accept()}, \lstinline{Socket::Connect()}, \lstinline{Socket::Write()} and \lstinline{Socket::Read()} and handles error properly.
+
+\noindent Class \lstinline{MessageUtil} is a utility tool which is responsible for data communication through stream sockets. It contains an reference of instance of class \lstinline{Socket} to communicate and data buffers to store the data. Since both \lstinline{Client} and \lstinline{Server} will use stream socket to communicate, they will both have an instance of class \lstinline{MessageUtil}. To support communications through stream socket, we could use plain character string as data. The specific data format and examples are explained in the design document.
+
+\noindent Class \lstinline{Client} is designed to support all client logic, including intercation with users, communication with the server. There are three public functions: \lstinline{Client::Connect()}, \lstinline{Client::Login()} and \lstinline{Client::Communicate()}. To be specific, the function \lstinline{Client::Connect()} is responsible for stablishing connection with the server. The function \lstinline{Client::Login()} is responsible for logining into the server as a client with a unqiue name. The function \lstinline{Client::Communicate()} interacts with the server and users to support the seven menu functions.
+
+\noindent Class \lstinline{Server} implements all logic on server side. There are two public functions: \lstinline{Server::Start()} and \lstinline{Server::Serve()}. The function \lstinline{Server::Start()} is responsible for doing the prepare things for starting the service. After calling this function, the server instance is ready to accept clients. After accepting each client, the server instance will starts a thread to provide service. The function \lstinline{Server::Serve()} is the thread function routine. Since the service provided by the server is a mini-message service. There is a mini-database implentated as hashtable in the \lstinline{Server}. The thread routine uses a common mutex to access, query or modify the database resided in the memory. All the data in the database will be lost after killing the server, which is required by the project.
+
+\section*{Difficulties I Encountered}
+While using stream socket to communicate, there are several pitfalls. All the difficulties are related with socket.
+
+\subsection*{Object or String}
+In \lstinline{C++}, it is natural to implement messages as a class and to use object to communicate. But encountering stream socket through network, this approach could not be supported without using a method called serialization. The serialization is a procedure that converts objects into plain character strings. After that we could use this converted strings to communicate and the other end reconstructs objects by a reverse procedure. The root cause of using this complicated method to transmit objects is that the simple binary buffer could not support complicated memory layout of \lstinline{C++} objects. Since we could not use a third-part implementation of serialization like Boost.Serialization framework or Google Protocol Buffers, we have to switch a simpler, but more rough approach, just discarding the object, directly using character strings for transmission and parsing the strings on the other side. The final approach is combining this two thoughts: using strings for communication and converting the strings into object while parsing for later operation. This approach meets the need of socket transimission and utilizes the advantanges of objects in \lstinline{C++}.
+
+\subsection*{Endianness}
+While handling communication through network, we have to properly handle endianness. Endianness is related to computer architecture on which device is running. It rules the bytes' order of internal memory layout of objects like integers. Correctly handling endianness is a trivial task and involving low-level memory operations which is prone to make a mistake. Instead of facing this problem, we could avoid it by using string solution. Why string solution is independent of endianness problem? Because a character is exactly one byte, endianness is not a rule inside the order the one byte instead of a rule inside multi-bytes, using one byte as smallest unit. So the string solution could avoid dealing with endianness problem.
+
+\subsection*{Partial Data}
+While using stream socket, we maybe encounter a problem that we only receive partial data instead of whole data sent by the other endpoint in the network. To resovle this problem, we could simply use a beginning and end mark in our string data format and use a while loop to receive data until we get a whole piece of data. To be specific, we could parse the data we received. If we we see an end mark, combine this part with previous parts to get a whole piece of data. If not, continue receiving(waiting) for the next part of the data, until we get the whole one through identidying the end mark. Thus, we solve the problem.
+
+\section*{What I Learned}
+Through this project, I have learnt how to use stream socket to communicate through network. Encountering and solving several problems related with stream socket and network programming under linux platform.
+\end{document}
