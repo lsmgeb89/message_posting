@@ -43,7 +43,7 @@ void Client::Login(void) {
   std::cout << "Enter your name: ";
   std::cin >> name_;
 
-  utils::PropertyList list{{"n", name_}};
+  utils::PropertyList list{{utils::id_name_, name_}};
   message_util_.SetRequest(utils::Login, list);
   message_util_.Write();
 
@@ -147,10 +147,12 @@ void Client::SendMessage(const utils::RequestType& request_type) {
   }
 
   std::time_t current_time = std::time(nullptr);
-  list = {{"s", name_}, {"t", std::to_string(current_time)}, {"m", text_msg}};
+  list = {{utils::id_sender_, name_},
+          {utils::id_time_, std::to_string(current_time)},
+          {utils::id_text_, text_msg}};
 
   if (utils::SendMessage2User == request_type) {
-    list.push_back({"r", recipient});
+    list.push_back({utils::id_recipient_, recipient});
   }
 
   message_util_.SetRequest(request_type, list);

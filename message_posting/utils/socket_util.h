@@ -47,7 +47,6 @@ class Socket {
 
   void Listen(void) {
     int ret = ::listen(socket_descriptor_, SOMAXCONN);
-    // TODO: adjust the length
     if (-1 == ret) {
       perror(LOG_ERROR_MODULE_SOCKET"[listen]");
       throw std::runtime_error("");

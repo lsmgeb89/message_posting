@@ -62,6 +62,14 @@ typedef struct EmptyContent {} InvalidContent;
 constexpr uint8_t max_msg_len = 80;
 constexpr uint16_t msg_buf_size_ = 128;
 constexpr uint8_t max_len = msg_buf_size_;
+static const std::string id_request_ = "req";
+static const std::string id_response_ = "res";
+static const std::string id_name_ = "n";
+static const std::string id_sender_ = "s";
+static const std::string id_recipient_ = "r";
+static const std::string id_time_ = "t";
+static const std::string id_text_ = "m";
+static const std::string id_detail_ = "z";
 static PropertyList dummy_list;
 
 struct TextMessage {
@@ -132,8 +140,6 @@ class MessageUtil {
   }
 
   // Getters
-  // TODO: check all getters' type
-
   const RequestType GetRequestType(void) const {
     return parsed_msg_.request_.req_type_;
   }
@@ -142,12 +148,10 @@ class MessageUtil {
     return parsed_msg_.request_.name_;
   }
 
-  // TODO: copy or not
   const char* GetRecipient(void) const {
     return parsed_msg_.request_.text_.recipient_;
   }
 
-  // TODO: copy or not
   const TextMessage& GetTextMessage(void) const {
     return parsed_msg_.request_.text_.text_msg_;
   }
@@ -211,7 +215,6 @@ class MessageUtil {
   static constexpr char delimiter_ = '|';
   static constexpr char msg_beg_ = '<';
   static constexpr char msg_end_ = '>';
-  // TODO: more const for res, req, etc
   std::stringstream msg_str_stream_;
   std::array<char, msg_buf_size_> msg_buf_;
   Message parsed_msg_;
@@ -231,9 +234,9 @@ class MessageUtil {
   void PackHead(const MessageType& type) {
     ClearStream();
     if (Request == type) {
-      msg_str_stream_ << msg_beg_ << delimiter_ << "req" << delimiter_;
+      msg_str_stream_ << msg_beg_ << delimiter_ << id_request_ << delimiter_;
     } else {
-      msg_str_stream_ << msg_beg_ << delimiter_ << "res" << delimiter_;
+      msg_str_stream_ << msg_beg_ << delimiter_ << id_response_ << delimiter_;
     }
   }
 
@@ -264,10 +267,10 @@ class MessageUtil {
 
     info = ExtractNext(msg_str, parse_count);
 
-    if ("req" == info) {
+    if (id_request_ == info) {
       parsed_msg_.type_ = Request;
       parsed_msg_.request_.empty_ = {};
-    } else if ("res" == info) {
+    } else if (id_response_ == info) {
       parsed_msg_.type_ = Response;
     } else {
       goto error;
@@ -304,22 +307,21 @@ class MessageUtil {
 
     ParseMessageType(msg_str, parse_count);
 
-    // TODO: fill text message
     while (parse_count != msg_str.size() - 2) {
       std::string key = ExtractNext(msg_str, parse_count);
       std::string value = ExtractNext(msg_str, parse_count);
-      if ("n" == key) {
+      if (id_name_ == key) {
         std::strncpy(parsed_msg_.request_.name_, value.c_str(), max_len);
-      } else if ("s" == key) {
+      } else if (id_sender_ == key) {
         std::strncpy(parsed_msg_.request_.text_.text_msg_.sender_, value.c_str(), max_len);
-      } else if ("r" == key) {
+      } else if (id_recipient_ == key) {
         std::strncpy(parsed_msg_.request_.text_.recipient_, value.c_str(), max_len);
-      } else if ("t" == key) {
+      } else if (id_time_ == key) {
         std::istringstream stream(value);
         stream >> parsed_msg_.request_.text_.text_msg_.time_;
-      } else if ("m" == key) {
+      } else if (id_text_ == key) {
         std::strncpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str(), max_len);
-      } else if ("z" == key) {
+      } else if (id_detail_ == key) {
         std::strncpy(parsed_msg_.response_.res_msg_, value.c_str(), max_len);
       }
     }

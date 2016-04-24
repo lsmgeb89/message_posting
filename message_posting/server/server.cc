@@ -61,20 +61,20 @@ void Server::Serve(const int client_socket_descriptor) {
   if (IsUserInConnectedList(client_name)) {
     std::cout << lock_with(mutex_output_) << time_str
               << "Another connection by connected user " << client_name << " rejected" << std::endl;
-    list = {{"z", "Not allowed multiple active connections of the same user; Login rejected"}};
+    list = {{utils::id_detail_, "Not allowed multiple active connections of the same user; Login rejected"}};
     client_message_util.SetResponse(utils::R_FAIL, list);
     client_message_util.Write();
     return;
   } else if (GetKnownListSize() == max_user) {
     std::cout << lock_with(mutex_output_) << time_str
         << "Server reached maximum users; connection by connected user " << client_name << " rejected" << std::endl;
-    list = {{"z", "Maximum users reached; Login rejected"}};
+    list = {{utils::id_detail_, "Maximum users reached; Login rejected"}};
     client_message_util.SetResponse(utils::R_FAIL, list);
     client_message_util.Write();
     return;
   }
 
-  list = {{"z", "Login succeeded"}};
+  list = {{utils::id_detail_, "Login succeeded"}};
   client_message_util.SetResponse(utils::R_SUCCESS, list);
   client_message_util.Write();
 
@@ -157,7 +157,7 @@ void Server::DisplayName(const utils::RequestType &request_type,
     return;
   }
 
-  list = {{"z", str_stream.str()}};
+  list = {{utils::id_detail_, str_stream.str()}};
   client_message_util.SetResponse(utils::R_SUCCESS, list);
   client_message_util.Write();
 }
@@ -172,7 +172,7 @@ void Server::SendMessage(const char* time_str,
   if (IsUserExceedMessageCount(client_name)) {
     SERVER_OUT << "'s message discarded because of exceeding max message count "
                << std::to_string(max_message_count) << "." << std::endl;
-    list = {{"z", "Message discarded because exceeding max message count " + std::to_string(max_message_count)}};
+    list = {{utils::id_detail_, "Message discarded because exceeding max message count " + std::to_string(max_message_count)}};
     client_message_util.SetResponse(utils::R_FAIL, list);
     client_message_util.Write();
   } else {
@@ -205,7 +205,7 @@ void Server::SendMessage(const char* time_str,
       }
     }
 
-    list = {{"z", "Message sent"}};
+    list = {{utils::id_detail_, "Message sent"}};
     client_message_util.SetResponse(utils::R_SUCCESS, list);
     client_message_util.Write();
     StepUserSendMessageCount(client_name);
@@ -234,7 +234,7 @@ void Server::GetMessage(const std::string& client_name,
     }
   }
 
-  list = {{"z", str_stream.str()}};
+  list = {{utils::id_detail_, str_stream.str()}};
   client_message_util.SetResponse(utils::R_SUCCESS, list);
   client_message_util.Write();
 }
