@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
-project(message_posting VERSION 1.0 LANGUAGES CXX)
+project(message_posting VERSION 1.0 LANGUAGES CXX C)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
