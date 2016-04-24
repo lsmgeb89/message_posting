@@ -37,6 +37,8 @@ class Server {
   static constexpr KnownList::size_type max_user = 100;
   static constexpr uint8_t max_message_count = 10;
 
+  void Serve_(const int client_socket);
+
   void DisplayName(const utils::RequestType& request_type,
                    utils::MessageUtil& client_message_util);
 

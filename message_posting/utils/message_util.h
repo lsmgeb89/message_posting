@@ -171,21 +171,10 @@ class MessageUtil {
     info_message << "[Write][" << msg_str_stream_.str().length() << "]"
                  << msg_str_stream_.str() << std::endl;
 
-    if (msg_str_stream_.str().size() > msg_buf_size_) {
-      std::string err_msg;
-      err_msg += "Message discarded because it exceeded max buffer length ";
-      err_msg += std::to_string(msg_buf_size_);
-      err_msg += "\n";
-      throw std::overflow_error(err_msg);
-    }
-
-    std::memcpy(msg_buf_.data(), msg_str_stream_.str().c_str(), msg_str_stream_.str().size());
+    std::memcpy(msg_buf_.data(), msg_str_stream_.str().c_str(),
+                msg_str_stream_.str().size() > msg_buf_size_ ? msg_buf_size_ : msg_str_stream_.str().size());
 
     ssize_t count = internal_socket_.Write(msg_buf_.data(), msg_buf_size_);
-    if (-1 == count) {
-      perror(LOG_ERROR_MODULE_MESSAGE"[write]");
-      throw std::runtime_error("");
-    }
     return count;
   }
 
@@ -196,10 +185,6 @@ class MessageUtil {
     while(count != msg_buf_size_) {
       ssize_t res = internal_socket_.Read(msg_buf_.data() + count,
                                           msg_buf_size_ - count);
-      if (-1 == res) {
-        perror(LOG_ERROR_MODULE_MESSAGE"[read]");
-        throw std::runtime_error("");
-      }
       count += res;
     }
 
@@ -296,7 +281,7 @@ class MessageUtil {
 
     error:
       ResetMsg();
-      throw std::runtime_error("");
+      throw std::runtime_error("Invalid Message!");
   };
 
   void ParseMessage(void) {

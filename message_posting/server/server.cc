@@ -43,7 +43,17 @@ void Server::Start(const uint16_t& port) {
   }
 }
 
-void Server::Serve(const int client_socket_descriptor) {
+void Server::Serve(const int client_socket) {
+  try {
+    Serve_(client_socket);
+  } catch (const std::exception& err) {
+    error_server << lock_with(mutex_output_) << err.what() << " Thread exits!" << std::endl;
+  } catch (...) {
+    error_server << lock_with(mutex_output_) << "Thread exits!" << std::endl;
+  }
+}
+
+void Server::Serve_(const int client_socket_descriptor) {
   bool exit(false);
   char time_str[128];
   std::time_t t;
@@ -90,7 +100,13 @@ void Server::Serve(const int client_socket_descriptor) {
   AddUserToKnownList(client_name);
 
   do {
-    client_message_util.Read();
+    try {
+      client_message_util.Read();
+    } catch (const std::runtime_error& e_runtime) {
+      error_server << lock_with(mutex_output_) << e_runtime.what() << std::endl;
+      continue;
+    }
+
     const utils::RequestType request_type(client_message_util.GetRequestType());
 
     std::memset(time_str, 0, 128);

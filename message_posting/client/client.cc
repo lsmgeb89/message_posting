@@ -80,29 +80,25 @@ void Client::Communicate(void) {
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cout << std::endl;
 
-    try {
-      switch (choice) {
-        case utils::DisplayKnownUsersNames:
-        case utils::DisplayConnectedUsersNames:
-          DisplayName(choice);
-          break;
-        case utils::SendMessage2User:
-        case utils::SendMessage2ConnectedUsers:
-        case utils::SendMessage2KnownUsers:
-          SendMessage(choice);
-          break;
-        case utils::GetMessages:
-          GetMessage();
-          break;
-        case utils::Exit:
-          Exit();
-          exit = true;
-          break;
-        default:
-          break;
-      }
-    } catch (const std::overflow_error& e_over) {
-      error_client << e_over.what();
+    switch (choice) {
+      case utils::DisplayKnownUsersNames:
+      case utils::DisplayConnectedUsersNames:
+        DisplayName(choice);
+        break;
+      case utils::SendMessage2User:
+      case utils::SendMessage2ConnectedUsers:
+      case utils::SendMessage2KnownUsers:
+        SendMessage(choice);
+        break;
+      case utils::GetMessages:
+        GetMessage();
+        break;
+      case utils::Exit:
+        Exit();
+        exit = true;
+        break;
+      default:
+        break;
     }
   } while(!exit);
 }

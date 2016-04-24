@@ -4,7 +4,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cerrno>
 #include <iostream>
+#include <system_error>
 
 #include "log_util.h"
 
@@ -18,7 +20,7 @@ class Socket {
     : socket_descriptor_(::socket(AF_INET, SOCK_STREAM, 0)) {
     if (-1 == socket_descriptor_) {
       perror(LOG_ERROR_MODULE_SOCKET"[socket]");
-      throw std::runtime_error("");
+      throw std::system_error(errno, std::system_category(), "[socket]");
     }
   }
 
@@ -41,7 +43,7 @@ class Socket {
                      static_cast<socklen_t>(sizeof(*address)));
     if (-1 == ret) {
       perror(LOG_ERROR_MODULE_SOCKET"[bind]");
-      throw std::runtime_error("");
+      throw std::system_error(errno, std::system_category(), "[bind]");
     }
   }
 
@@ -49,7 +51,7 @@ class Socket {
     int ret = ::listen(socket_descriptor_, SOMAXCONN);
     if (-1 == ret) {
       perror(LOG_ERROR_MODULE_SOCKET"[listen]");
-      throw std::runtime_error("");
+      throw std::system_error(errno, std::system_category(), "[listen]");
     }
   }
 
@@ -60,7 +62,7 @@ class Socket {
                                reinterpret_cast<socklen_t*>(&address_len));
     if (-1 == peer_socket) {
       perror(LOG_ERROR_MODULE_SOCKET"[accept]");
-      throw std::runtime_error("");
+      throw std::system_error(errno, std::system_category(), "[accept]");
     }
     return peer_socket;
   }
@@ -71,17 +73,27 @@ class Socket {
                         static_cast<socklen_t>(sizeof(*remote_address)));
     if (-1 == res) {
       perror(LOG_ERROR_MODULE_SOCKET"[connect]");
-      throw std::runtime_error("");
+      throw std::system_error(errno, std::system_category(), "[connect]");
     }
     return res;
   }
 
   ssize_t Read(void* buf, size_t count) const {
-    return ::read(socket_descriptor_, buf, count);
+    int res = ::read(socket_descriptor_, buf, count);
+    if (-1 == res) {
+      perror(LOG_ERROR_MODULE_SOCKET"[read]");
+      throw std::system_error(errno, std::system_category(), "[read]");
+    }
+    return res;
   }
 
   ssize_t Write(const void* buf, size_t count) const {
-    return ::write(socket_descriptor_, buf, count);
+    int res = ::write(socket_descriptor_, buf, count);
+    if (-1 == res) {
+      perror(LOG_ERROR_MODULE_SOCKET"[write]");
+      throw std::system_error(errno, std::system_category(), "[write]");
+    }
+    return res;
   }
 
  private:
