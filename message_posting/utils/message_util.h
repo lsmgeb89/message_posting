@@ -60,8 +60,8 @@ typedef std::vector<MessageProperty> PropertyList;
 typedef struct EmptyContent {} InvalidContent;
 
 constexpr uint8_t max_msg_len = 80;
-constexpr uint16_t msg_buf_size_ = 128;
-constexpr uint8_t max_len = msg_buf_size_;
+constexpr uint16_t msg_buf_size_ = 1024;
+constexpr uint8_t max_len = 128;
 static const std::string id_request_ = "req";
 static const std::string id_response_ = "res";
 static const std::string id_name_ = "n";
