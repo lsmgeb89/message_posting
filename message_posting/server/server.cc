@@ -150,6 +150,8 @@ void Server::Serve_(const int client_socket_descriptor) {
       default:
         break;
     }
+
+    info_server << lock_with(mutex_output_) << ShowAll();
   } while(!exit);
 }
 
@@ -307,6 +309,38 @@ bool Server::IsUserInConnectedList(const std::string& client_name) {
   std::lock_guard<std::mutex> guard(mutex_connected_users_);
   auto it = connected_users_.find(client_name);
   return (it != connected_users_.end());
+}
+
+std::string Server::ShowAll(void) {
+  std::stringstream str_stream;
+  {
+    std::lock_guard<std::mutex> guard(mutex_known_users_);
+    str_stream << "\nKnown List:\n";
+    for (auto it = known_users_.cbegin(); it != known_users_.cend(); ++it) {
+      str_stream << std::distance(known_users_.cbegin(), it) + 1 << ". " << it->first << ", " << std::to_string(it->second) << std::endl;
+    }
+  }
+  {
+    std::lock_guard<std::mutex> guard(mutex_connected_users_);
+    str_stream << "Connected List:\n";
+    for (auto it = connected_users_.cbegin(); it != connected_users_.cend(); ++it) {
+      str_stream << std::distance(connected_users_.cbegin(), it) + 1 << ". " << it->first << ", " << it->second << std::endl;
+    }
+  }
+  {
+    std::lock_guard<std::mutex> guard(mutex_message_database_);
+    str_stream << "Core Database:\n";
+    for (auto it1 = message_database_.cbegin(); it1 != message_database_.cend(); ++it1) {
+      str_stream << "*** " << it1->first << " ***\n";
+      const std::vector<utils::TextMessage> &message_list = it1->second;
+      for (auto it = message_list.cbegin(); it != message_list.cend(); ++it) {
+        str_stream << std::distance(message_list.cbegin(), it) + 1 << ". ";
+        str_stream << "From " << it->sender_ << ", ";
+        str_stream << it->words_ << std::endl;
+      }
+    }
+  }
+  return str_stream.str();
 }
 
 } // namespace server

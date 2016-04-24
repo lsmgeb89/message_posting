@@ -60,7 +60,7 @@ typedef std::vector<MessageProperty> PropertyList;
 typedef struct EmptyContent {} InvalidContent;
 
 constexpr uint8_t max_msg_len = 80;
-constexpr uint16_t msg_buf_size_ = 1024;
+constexpr uint16_t msg_buf_size_ = 2048;
 constexpr uint8_t max_len = 128;
 static const std::string id_request_ = "req";
 static const std::string id_response_ = "res";
@@ -94,7 +94,7 @@ struct RequestMessage {
 
 struct ResponseMessage {
   RetCode ret_code_;
-  char res_msg_[max_len];
+  char res_msg_[msg_buf_size_];
 };
 
 struct Message {
@@ -296,18 +296,18 @@ class MessageUtil {
       std::string key = ExtractNext(msg_str, parse_count);
       std::string value = ExtractNext(msg_str, parse_count);
       if (id_name_ == key) {
-        std::strncpy(parsed_msg_.request_.name_, value.c_str(), max_len);
+        std::strncpy(parsed_msg_.request_.name_, value.c_str(), max_len - 1);
       } else if (id_sender_ == key) {
-        std::strncpy(parsed_msg_.request_.text_.text_msg_.sender_, value.c_str(), max_len);
+        std::strncpy(parsed_msg_.request_.text_.text_msg_.sender_, value.c_str(), max_len - 1);
       } else if (id_recipient_ == key) {
-        std::strncpy(parsed_msg_.request_.text_.recipient_, value.c_str(), max_len);
+        std::strncpy(parsed_msg_.request_.text_.recipient_, value.c_str(), max_len - 1);
       } else if (id_time_ == key) {
         std::istringstream stream(value);
         stream >> parsed_msg_.request_.text_.text_msg_.time_;
       } else if (id_text_ == key) {
-        std::strncpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str(), max_len);
+        std::strncpy(parsed_msg_.request_.text_.text_msg_.words_, value.c_str(), max_len - 1);
       } else if (id_detail_ == key) {
-        std::strncpy(parsed_msg_.response_.res_msg_, value.c_str(), max_len);
+        std::strncpy(parsed_msg_.response_.res_msg_, value.c_str(), msg_buf_size_ - 1);
       }
     }
   }
