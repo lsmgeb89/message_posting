@@ -2,7 +2,7 @@
 
 ## Summary
   * Implemented a message posting system composed of a server and clients - each client or the server is a process running on a machine
-  * Utilized [sockets][socket] to communicate between a client with the server while handling partial messages and [endian][endian] problem
+  * Utilized [sockets][socket] to communicate between a client with the server while handling partial messages and [endianness][endian] problem
   * Utilized [`std::thread`][std_thread] to create a detached thread for serving each incoming client
   * Utilized [`std::mutex`][std_mutex] to maintain data consistency while serving multiple clients concurrently
 
